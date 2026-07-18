@@ -26,10 +26,18 @@ class UpdateRiskData extends Command
         $this->info('Updating global currency rates...');
         $exchange->getRates('USD');
 
-        $countries = Country::all();
-        $bar = $this->output->createProgressBar(count($countries));
+        // Only get countries that don't have a risk score yet
+        $countries = Country::whereNotIn('id', function($query) {
+            $query->select('country_id')->from('risk_scores');
+        })->get();
+        
+        $this->info('Processing ' . $countries->count() . ' remaining countries...');
+        
+        $bar = $this->output->createProgressBar($countries->count());
 
         foreach ($countries as $country) {
+            // Add a small delay to prevent API rate limits
+            usleep(500000); // 0.5 seconds
             try {
                 // 2. Fetch News
                 $articles = $gnews->fetchNewsForCountry($country);

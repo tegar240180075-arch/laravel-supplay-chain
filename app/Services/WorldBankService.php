@@ -16,11 +16,20 @@ class WorldBankService
         // FP.CPI.TOTL.ZG = Inflation, consumer prices (annual %)
         // SP.POP.TOTL = Population, total
         
-        $year = date('Y') - 2; // World Bank data is usually delayed by 1-2 years
+        $endYear = date('Y');
+        $startYear = $endYear - 5;
+        $dateRange = "{$startYear}:{$endYear}";
         
-        $gdp = $this->fetchIndicator($country->code, 'NY.GDP.MKTP.CD', $year);
-        $inflation = $this->fetchIndicator($country->code, 'FP.CPI.TOTL.ZG', $year);
-        $population = $this->fetchIndicator($country->code, 'SP.POP.TOTL', $year);
+        $gdpResult = $this->fetchIndicatorRange($country->code, 'NY.GDP.MKTP.CD', $dateRange);
+        $inflationResult = $this->fetchIndicatorRange($country->code, 'FP.CPI.TOTL.ZG', $dateRange);
+        $populationResult = $this->fetchIndicatorRange($country->code, 'SP.POP.TOTL', $dateRange);
+
+        // Use the most recent available year from any indicator
+        $year = $gdpResult['year'] ?? $inflationResult['year'] ?? $populationResult['year'] ?? ($endYear - 2);
+
+        $gdp = $gdpResult['value'] ?? null;
+        $inflation = $inflationResult['value'] ?? null;
+        $population = $populationResult['value'] ?? null;
 
         if ($gdp || $inflation || $population) {
             return CountryEconomicData::updateOrCreate(
@@ -36,23 +45,35 @@ class WorldBankService
         return null;
     }
 
-    protected function fetchIndicator($countryCode, $indicator, $year)
+    /**
+     * Fetch indicator data across a range of years and return the most recent non-null value.
+     */
+    protected function fetchIndicatorRange($countryCode, $indicator, $dateRange)
     {
         try {
-            $response = Http::timeout(10)->get("{$this->baseUrl}/{$countryCode}/indicator/{$indicator}", [
-                'date' => $year,
-                'format' => 'json'
+            $response = Http::timeout(15)->get("{$this->baseUrl}/{$countryCode}/indicator/{$indicator}", [
+                'date' => $dateRange,
+                'format' => 'json',
+                'per_page' => 10,
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (isset($data[1]) && isset($data[1][0]['value'])) {
-                    return $data[1][0]['value'];
+                if (isset($data[1]) && is_array($data[1])) {
+                    // Data comes sorted newest first - find first non-null value
+                    foreach ($data[1] as $entry) {
+                        if (isset($entry['value']) && $entry['value'] !== null) {
+                            return [
+                                'value' => $entry['value'],
+                                'year' => $entry['date'] ?? null,
+                            ];
+                        }
+                    }
                 }
             }
         } catch (\Exception $e) {
             \Log::warning("WorldBankService failed for $countryCode indicator $indicator: " . $e->getMessage());
         }
-        return null;
+        return ['value' => null, 'year' => null];
     }
 }

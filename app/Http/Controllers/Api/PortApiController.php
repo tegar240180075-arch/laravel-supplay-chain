@@ -19,6 +19,10 @@ class PortApiController extends Controller
         $q = $request->query('q');
         $ports = Port::with('country')
                     ->where('name', 'like', "%{$q}%")
+                    ->orWhereHas('country', function($query) use ($q) {
+                        $query->where('name', 'like', "%{$q}%")
+                              ->orWhere('code', 'like', "%{$q}%");
+                    })
                     ->get();
         return response()->json($ports);
     }
