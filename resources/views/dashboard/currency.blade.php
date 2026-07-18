@@ -17,23 +17,13 @@
                 <div class="col-6 mb-3">
                     <label class="form-label text-muted small">Dari</label>
                     <select id="convFrom" class="form-select bg-dark text-white border-secondary">
-                        <option value="USD">USD - Dolar AS</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - Pound Inggris</option>
-                        <option value="JPY">JPY - Yen Jepang</option>
-                        <option value="CNY">CNY - Yuan China</option>
-                        <option value="IDR">IDR - Rupiah</option>
+                        <option value="USD">Memuat mata uang...</option>
                     </select>
                 </div>
                 <div class="col-6 mb-3">
                     <label class="form-label text-muted small">Ke</label>
                     <select id="convTo" class="form-select bg-dark text-white border-secondary">
-                        <option value="IDR">IDR - Rupiah</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - Pound Inggris</option>
-                        <option value="JPY">JPY - Yen Jepang</option>
-                        <option value="CNY">CNY - Yuan China</option>
-                        <option value="USD">USD - Dolar AS</option>
+                        <option value="IDR">Memuat mata uang...</option>
                     </select>
                 </div>
             </div>
@@ -81,28 +71,77 @@
     async function loadRates() {
         showLoader();
         try {
-            const ratesData = await apiGet('currency/rates?base=USD');
-            const tbody = document.getElementById('ratesTableBody');
-            tbody.innerHTML = '';
+            const [ratesData, countries] = await Promise.all([
+                apiGet('currency/rates?base=USD'),
+                apiGet('countries')
+            ]);
             
-            if (ratesData) {
-                let ratesList = Array.isArray(ratesData) ? ratesData : Object.entries(ratesData).map(([target, rate]) => ({target_currency: target, rate: rate}));
+            const tbody = document.getElementById('ratesTableBody');
+            
+            if (ratesData && countries) {
+                let ratesMap = {};
+                if (Array.isArray(ratesData)) {
+                    ratesData.forEach(r => ratesMap[r.target_currency] = r.rate);
+                } else {
+                    ratesMap = ratesData;
+                }
                 
-                ratesList.slice(0, 20).forEach(item => {
-                    const target = item.target_currency || item[0];
-                    const rate = item.rate || item[1];
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold">${target}</td>
-                            <td>${parseFloat(rate).toFixed(4)}</td>
-                            <td class="text-success"><i class="fa-solid fa-arrow-right"></i> Stabil</td>
-                        </tr>
-                    `;
+                let addedCurrencies = new Set();
+                let html = '';
+                let optionsHtml = '';
+                
+                // Tambahkan USD sebagai basis jika tidak ada
+                if (!ratesMap['USD']) {
+                    ratesMap['USD'] = 1;
+                }
+                
+                countries.forEach(country => {
+                    const currencyCode = country.currency_code;
+                    if (currencyCode && ratesMap[currencyCode] && !addedCurrencies.has(currencyCode)) {
+                        addedCurrencies.add(currencyCode);
+                        const rate = ratesMap[currencyCode];
+                        
+                        html += `
+                            <tr>
+                                <td>
+                                    <img src="https://flagcdn.com/20x15/${country.code.toLowerCase()}.png" class="me-2 rounded" alt="${country.name}">
+                                    <span class="fw-bold">${currencyCode}</span>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">${country.name}</div>
+                                </td>
+                                <td class="align-middle">${parseFloat(rate).toFixed(4)}</td>
+                                <td class="align-middle text-success"><i class="fa-solid fa-arrow-right"></i> Stabil</td>
+                            </tr>
+                        `;
+                        
+                        optionsHtml += `<option value="${currencyCode}">${currencyCode} - ${country.name}</option>`;
+                    }
                 });
+                
+                tbody.innerHTML = html || '<tr><td colspan="3" class="text-center text-muted">Data nilai tukar tidak tersedia</td></tr>';
+                
+                const convFrom = document.getElementById('convFrom');
+                const convTo = document.getElementById('convTo');
+                
+                // Simpan nilai pilihan sebelumnya jika ada
+                const oldFrom = convFrom.value;
+                const oldTo = convTo.value;
+                
+                convFrom.innerHTML = optionsHtml;
+                convTo.innerHTML = optionsHtml;
+                
+                // Set default pilihan
+                if (addedCurrencies.has(oldFrom)) convFrom.value = oldFrom;
+                else if (addedCurrencies.has('USD')) convFrom.value = 'USD';
+                
+                if (addedCurrencies.has(oldTo)) convTo.value = oldTo;
+                else if (addedCurrencies.has('IDR')) convTo.value = 'IDR';
+                
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
             }
         } catch (e) {
             console.error(e);
+            document.getElementById('ratesTableBody').innerHTML = '<tr><td colspan="3" class="text-center text-danger">Terjadi kesalahan</td></tr>';
         } finally {
             hideLoader();
         }

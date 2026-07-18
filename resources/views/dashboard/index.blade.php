@@ -103,18 +103,18 @@
         
         try {
             const countries = await apiGet('countries');
-            if (countries) document.getElementById('totalCountries').innerText = countries.length;
+            document.getElementById('totalCountries').innerText = (countries && countries.length) ? countries.length : 0;
             
             const ports = await apiGet('ports');
-            if (ports) document.getElementById('totalPorts').innerText = ports.length;
+            document.getElementById('totalPorts').innerText = (ports && ports.length) ? ports.length : 0;
             
             const news = await apiGet('news');
-            if (news) document.getElementById('totalNews').innerText = news.length;
+            document.getElementById('totalNews').innerText = (news && news.length) ? news.length : 0;
 
             await loadRiskMatrix();
             
         } catch (error) {
-            console.error(error);
+            console.error('Dashboard load error:', error);
         } finally {
             hideLoader();
         }
@@ -122,11 +122,22 @@
 
     async function loadRiskMatrix() {
         const risks = await apiGet('risk');
-        if (!risks) return;
-
         const tbody = document.getElementById('riskMatrixBody');
         tbody.innerHTML = '';
         
+        if (!risks || risks.length === 0) {
+            document.getElementById('criticalRisks').innerText = 0;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-warning py-4">
+                        <i class="fa-solid fa-database me-2"></i>
+                        Belum ada data risiko. Jalankan: <code>php artisan dashboard:init</code>
+                    </td>
+                </tr>`;
+            renderRiskChart({ Critical: 0, High: 0, Medium: 0, Low: 0 });
+            return;
+        }
+
         let criticalCount = 0;
         let dist = { Critical: 0, High: 0, Medium: 0, Low: 0 };
 

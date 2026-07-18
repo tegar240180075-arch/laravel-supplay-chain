@@ -72,14 +72,46 @@
             if (port.lat && port.lng) {
                 const marker = L.marker([port.lat, port.lng], {icon: portIcon}).addTo(map);
                 marker.bindPopup(`
-                    <div class="text-dark p-1">
+                    <div class="p-1">
                         <h6 class="mb-1 fw-bold">${port.name}</h6>
                         <div class="small mb-1">Negara: ${port.country ? port.country.name : 'Tidak diketahui'}</div>
+                        <div class="small mb-1">Kota: <span class="port-city" data-lat="${port.lat}" data-lng="${port.lng}">Mencari lokasi...</span></div>
                         <div class="small mb-1">Tipe: ${port.type || 'N/A'}</div>
                         <div class="small">Ukuran: <span class="badge bg-secondary">${port.size || 'N/A'}</span></div>
                     </div>
                 `);
                 markers.push(marker);
+            }
+        });
+
+        // Load city dynamically when popup opens to save API requests
+        map.on('popupopen', async function(e) {
+            const popupNode = e.popup._contentNode;
+            if (!popupNode) return;
+            
+            const cityEl = popupNode.querySelector('.port-city');
+            if (cityEl && cityEl.innerText === 'Mencari lokasi...') {
+                try {
+                    const lat = cityEl.getAttribute('data-lat');
+                    const lng = cityEl.getAttribute('data-lng');
+                    
+                    // Call OpenStreetMap Nominatim for reverse geocoding
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=id`);
+                    const data = await response.json();
+                    
+                    // Try to get the most specific location name
+                    const address = data.address;
+                    let city = 'Tidak diketahui';
+                    
+                    if (address) {
+                        city = address.city || address.town || address.municipality || address.village || address.county || address.state || 'Tidak diketahui';
+                    }
+                    
+                    cityEl.innerText = city;
+                } catch (err) {
+                    console.error('Geocoding error:', err);
+                    cityEl.innerText = 'Tidak ditemukan';
+                }
             }
         });
     }

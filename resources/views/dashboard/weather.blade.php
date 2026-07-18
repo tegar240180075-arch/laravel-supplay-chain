@@ -66,11 +66,39 @@
                             radius: 8
                         }).addTo(map);
                         
+                        let badgeColor = 'secondary';
+                        let totalScore = 'N/A';
+                        if (riskData) {
+                            totalScore = riskData.total_score;
+                            if (riskData.risk_level === 'Critical') badgeColor = 'danger';
+                            else if (riskData.risk_level === 'High') badgeColor = 'warning text-dark';
+                            else if (riskData.risk_level === 'Medium') badgeColor = 'info text-dark';
+                            else if (riskData.risk_level === 'Low') badgeColor = 'success';
+                        }
+                        
                         circle.bindPopup(`
-                            <div class="text-dark p-1">
-                                <h6 class="mb-1 fw-bold">${country.name}</h6>
-                                <div class="small">Risiko Cuaca: <strong>${riskData ? riskData.weather_risk : 'N/A'}</strong></div>
-                                <a href="/country/${country.code}" class="btn btn-sm btn-primary mt-2 w-100">Lihat Detail</a>
+                            <div class="p-1" style="min-width: 150px;">
+                                <div class="d-flex align-items-center border-bottom pb-2 mb-2">
+                                    <img src="https://flagcdn.com/20x15/${country.code.toLowerCase()}.png" class="me-2 border" alt="${country.name}">
+                                    <h6 class="mb-0 fw-bold">${country.name}</h6>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>Total Risiko:</span>
+                                    <span class="badge bg-${badgeColor}">${totalScore}</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Cuaca:</span>
+                                    <strong>${riskData ? riskData.weather_risk : '-'}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Inflasi:</span>
+                                    <strong>${riskData ? riskData.inflation_risk : '-'}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-2">
+                                    <span class="text-muted">Sentimen Berita:</span>
+                                    <strong>${riskData ? riskData.news_risk : '-'}</strong>
+                                </div>
+                                <a href="/country/${country.code}" class="btn btn-sm btn-primary w-100">Analisis Penuh</a>
                             </div>
                         `);
                     }

@@ -11,9 +11,7 @@
                 <div class="col-md-5">
                     <label class="form-label text-muted">Negara A</label>
                     <select class="form-select bg-dark text-white border-secondary" id="compare1">
-                        <option value="US">Amerika Serikat</option>
-                        <option value="DE">Jerman</option>
-                        <option value="CN">Tiongkok</option>
+                        <option value="">Memuat negara...</option>
                     </select>
                 </div>
                 <div class="col-md-2 text-center py-2">
@@ -22,9 +20,7 @@
                 <div class="col-md-5">
                     <label class="form-label text-muted">Negara B</label>
                     <select class="form-select bg-dark text-white border-secondary" id="compare2">
-                        <option value="CN" selected>Tiongkok</option>
-                        <option value="ID">Indonesia</option>
-                        <option value="AU">Australia</option>
+                        <option value="">Memuat negara...</option>
                     </select>
                 </div>
                 <div class="col-12 mt-3 text-center">
@@ -106,6 +102,36 @@
 @push('scripts')
 <script>
     let radarChart = null;
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await populateCountries();
+    });
+
+    async function populateCountries() {
+        const select1 = document.getElementById('compare1');
+        const select2 = document.getElementById('compare2');
+        try {
+            const countries = await apiGet('countries');
+            if (countries && countries.length > 0) {
+                let optionsHtml = '';
+                countries.forEach(c => {
+                    optionsHtml += `<option value="${c.code}">${c.name}</option>`;
+                });
+                
+                select1.innerHTML = optionsHtml;
+                select2.innerHTML = optionsHtml;
+                
+                if (countries.find(c => c.code === 'US')) select1.value = 'US';
+                else select1.selectedIndex = 0;
+                
+                if (countries.find(c => c.code === 'CN')) select2.value = 'CN';
+                else if (countries.find(c => c.code === 'ID')) select2.value = 'ID';
+                else select2.selectedIndex = Math.min(1, countries.length - 1);
+            }
+        } catch (e) {
+            console.error('Failed to load countries', e);
+        }
+    }
 
     async function compareCountries() {
         const c1 = document.getElementById('compare1').value;

@@ -88,7 +88,10 @@
                     <button class="btn btn-dark dropdown-toggle glass-card py-1 px-3" type="button" data-bs-toggle="dropdown">
                         <i class="fa-solid fa-magnifying-glass me-2"></i> Cari Negara
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-dark" id="globalCountrySearch">
+                    <ul class="dropdown-menu dropdown-menu-dark" id="globalCountrySearch" style="max-height: 400px; overflow-y: auto; width: 280px;">
+                        <li class="px-2 pb-2 sticky-top" style="background: #1a1a1a;">
+                            <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" id="countrySearchInput" placeholder="Ketik nama negara..." autocomplete="off">
+                        </li>
                         <!-- Populated by JS -->
                         <li><span class="dropdown-item text-muted">Memuat...</span></li>
                     </ul>
@@ -108,7 +111,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.css"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     

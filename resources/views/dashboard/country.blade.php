@@ -144,9 +144,17 @@
             const econ = await apiGet(`countries/${code}/economic`);
             if (econ && econ.length > 0) {
                 const latest = econ[0];
-                document.getElementById('countryPopulation').innerText = formatNumber(latest.population);
-                document.getElementById('countryGDP').innerText = `$${parseFloat(latest.gdp_billions).toFixed(2)} Miliar`;
-                document.getElementById('countryInflation').innerText = `${parseFloat(latest.inflation_rate).toFixed(2)}%`;
+                document.getElementById('countryPopulation').innerText = latest.population ? formatNumber(latest.population) : 'Belum tersedia';
+                
+                const gdp = parseFloat(latest.gdp_billions);
+                document.getElementById('countryGDP').innerText = !isNaN(gdp) && gdp > 0 ? `$${gdp.toFixed(2)} Miliar` : 'Belum tersedia';
+                
+                const inf = parseFloat(latest.inflation_rate);
+                document.getElementById('countryInflation').innerText = !isNaN(inf) ? `${inf.toFixed(2)}%` : 'Belum tersedia';
+            } else {
+                document.getElementById('countryPopulation').innerText = 'Belum tersedia';
+                document.getElementById('countryGDP').innerText = 'Belum tersedia';
+                document.getElementById('countryInflation').innerText = 'Belum tersedia';
             }
             
             // 3. Weather
