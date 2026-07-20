@@ -54,10 +54,11 @@
                         let color = '#10b981'; // Green (Good)
                         let riskData = riskMap[country.id];
                         
-                        if (riskData) {
-                            if (riskData.weather_risk > 70) color = '#ef4444'; // Red (Danger)
-                            else if (riskData.weather_risk > 40) color = '#f59e0b'; // Yellow (Warning)
-                        }
+                        // Jangan tampilkan negara yang belum memiliki data analisis
+                        if (!riskData) return;
+
+                        if (riskData.weather_risk > 70) color = '#ef4444'; // Red (Danger)
+                        else if (riskData.weather_risk > 40) color = '#f59e0b'; // Yellow (Warning)
                         
                         const circle = L.circleMarker([country.lat, country.lng], {
                             color: color,

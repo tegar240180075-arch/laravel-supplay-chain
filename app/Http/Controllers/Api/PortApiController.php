@@ -11,13 +11,13 @@ class PortApiController extends Controller
 {
     public function index()
     {
-        return response()->json(Port::with('country')->get());
+        return response()->json(Port::with(['country', 'country.riskScore'])->get());
     }
 
     public function search(Request $request)
     {
         $q = $request->query('q');
-        $ports = Port::with('country')
+        $ports = Port::with(['country', 'country.riskScore'])
                     ->where('name', 'like', "%{$q}%")
                     ->orWhereHas('country', function($query) use ($q) {
                         $query->where('name', 'like', "%{$q}%")

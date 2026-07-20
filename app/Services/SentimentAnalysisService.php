@@ -15,12 +15,28 @@ class SentimentAnalysisService
     public function __construct()
     {
         $this->positiveWords = PositiveWord::pluck('word')->toArray();
+        if (empty($this->positiveWords)) {
+            $this->positiveWords = ['growth', 'profit', 'increase', 'stable', 'success', 'boom', 'positive', 'good', 'excellent', 'great', 'improve', 'up', 'recovery'];
+        }
         $this->negativeWords = NegativeWord::pluck('word')->toArray();
+        if (empty($this->negativeWords)) {
+            $this->negativeWords = ['delay', 'disruption', 'inflation', 'crisis', 'risk', 'bad', 'drop', 'fall', 'decrease', 'loss', 'poor', 'problem', 'shortage', 'fail', 'strike'];
+        }
     }
 
     public function analyzeAndSave(NewsCache $news)
     {
-        $text = strtolower($news->title . ' ' . $news->description);
+        $sentiment = $this->analyzeText($news->title, $news->description);
+        
+        return NewsSentiment::updateOrCreate(
+            ['news_cache_id' => $news->id],
+            $sentiment
+        );
+    }
+    
+    public function analyzeText($title, $description)
+    {
+        $text = strtolower($title . ' ' . $description);
         
         // Simple tokenization (remove punctuation and split by space)
         $text = preg_replace('/[^\p{L}\p{N}\s]/u', '', $text);
@@ -29,16 +45,11 @@ class SentimentAnalysisService
         $positiveScore = 0;
         $negativeScore = 0;
         
-        foreach ($words as $word) {
-            $word = trim($word);
-            if (empty($word)) continue;
-            
-            if (in_array($word, $this->positiveWords)) {
-                $positiveScore++;
-            }
-            if (in_array($word, $this->negativeWords)) {
-                $negativeScore++;
-            }
+        foreach ($this->positiveWords as $pWord) {
+            if (str_contains($text, strtolower($pWord))) $positiveScore++;
+        }
+        foreach ($this->negativeWords as $nWord) {
+            if (str_contains($text, strtolower($nWord))) $negativeScore++;
         }
         
         $sentimentLabel = 'Neutral';
@@ -48,14 +59,11 @@ class SentimentAnalysisService
             $sentimentLabel = 'Negative';
         }
         
-        return NewsSentiment::updateOrCreate(
-            ['news_cache_id' => $news->id],
-            [
-                'positive_score' => $positiveScore,
-                'negative_score' => $negativeScore,
-                'sentiment_label' => $sentimentLabel
-            ]
-        );
+        return [
+            'positive_score' => $positiveScore,
+            'negative_score' => $negativeScore,
+            'sentiment_label' => $sentimentLabel
+        ];
     }
     
     public function getCountrySentimentScore($countryId)
@@ -65,7 +73,7 @@ class SentimentAnalysisService
             ->with('sentiment')
             ->get();
             
-        if ($recentNews->isEmpty()) return 0; // Neutral
+        if ($recentNews->isEmpty()) return 50; // 50 is Neutral baseline, 0 would mean zero risk (false positive)
         
         $totalSentiments = 0;
         $score = 0;
@@ -78,7 +86,7 @@ class SentimentAnalysisService
             }
         }
         
-        if ($totalSentiments == 0) return 0;
+        if ($totalSentiments == 0) return 50;
         
         // Normalize to a 0-100 scale where higher is worse (more negative news)
         // Let's map it roughly: baseline is 50. Negative pulls it to 100, Positive pulls to 0.

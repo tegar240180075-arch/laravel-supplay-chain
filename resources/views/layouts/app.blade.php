@@ -33,6 +33,7 @@
         <h5 class="mt-3 text-primary">Memproses Data...</h5>
     </div>
 
+    @auth
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="p-4 text-center border-bottom border-secondary mb-3">
@@ -44,6 +45,7 @@
             <i class="fa-solid fa-chart-line"></i> Ringkasan Global
         </a>
         
+        @auth
         <div class="text-muted small fw-bold px-4 mt-4 mb-2">INTELIJEN</div>
         
         <a href="{{ route('dashboard.weather') }}" class="sidebar-link {{ request()->routeIs('dashboard.weather') ? 'active' : '' }}">
@@ -70,10 +72,21 @@
         <a href="{{ route('dashboard.watchlist') }}" class="sidebar-link {{ request()->routeIs('dashboard.watchlist') ? 'active' : '' }}">
             <i class="fa-solid fa-star"></i> Daftar Pantauan
         </a>
+
+        @if(auth()->user()->isAdmin())
+        <div class="text-muted small fw-bold px-4 mt-4 mb-2">SISTEM</div>
+
+        <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->routeIs('admin.index') ? 'active' : '' }}">
+            <i class="fa-solid fa-shield-halved"></i> Administrasi
+        </a>
+        @endif
+        @endauth
     </div>
+    @endauth
 
     <!-- Main Content -->
-    <div class="main-content">
+    <div class="main-content" @guest style="margin-left: 0;" @endguest>
+        @auth
         <!-- Top Navbar -->
         <nav class="top-navbar d-flex justify-content-between align-items-center rounded-3 mb-4">
             <div class="d-flex align-items-center">
@@ -92,18 +105,31 @@
                         <li class="px-2 pb-2 sticky-top" style="background: #1a1a1a;">
                             <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" id="countrySearchInput" placeholder="Ketik nama negara..." autocomplete="off">
                         </li>
-                        <!-- Populated by JS -->
                         <li><span class="dropdown-item text-muted">Memuat...</span></li>
                     </ul>
                 </div>
                 
-                <div class="text-end ms-3 border-start border-secondary ps-3">
-                    <div class="fw-bold text-white">Admin User</div>
-                    <div class="small text-muted">Admin Sistem</div>
+                <div class="dropdown ms-3 border-start border-secondary ps-3">
+                    <div class="d-flex align-items-center cursor-pointer" data-bs-toggle="dropdown" style="cursor: pointer;">
+                        <div class="text-end me-3">
+                            <div class="fw-bold text-white">{{ auth()->user()->name }}</div>
+                            <div class="small text-muted text-uppercase">{{ auth()->user()->role }}</div>
+                        </div>
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=0D8ABC&color=fff" class="rounded-circle" width="40" height="40" alt="User">
+                    </div>
+                    
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end mt-2 glass-card border-secondary">
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
-                <img src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" class="rounded-circle" width="40" height="40" alt="User">
             </div>
         </nav>
+        @endauth
 
         <!-- Page Content -->
         @yield('content')

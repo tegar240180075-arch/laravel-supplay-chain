@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\NewsApiController;
 use App\Http\Controllers\Api\CurrencyApiController;
 use App\Http\Controllers\Api\WeatherApiController;
 use App\Http\Controllers\Api\WatchlistApiController;
+use App\Http\Controllers\Api\AdminApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -48,7 +49,32 @@ Route::get('/currency/history', [CurrencyApiController::class, 'history']);
 Route::get('/weather/{code}', [WeatherApiController::class, 'current']);
 Route::get('/weather/forecast/{code}', [WeatherApiController::class, 'forecast']);
 
-// Watchlist (Optional auth, leaving open for simplicity in this project if no auth is enforced)
+// Watchlist
 Route::get('/watchlist', [WatchlistApiController::class, 'index']);
 Route::post('/watchlist', [WatchlistApiController::class, 'store']);
 Route::delete('/watchlist/{id}', [WatchlistApiController::class, 'destroy']);
+
+// Admin — CRUD & System Actions
+Route::prefix('admin')->group(function () {
+    Route::get('/stats',            [AdminApiController::class, 'stats']);
+
+    // Users
+    Route::get('/users',            [AdminApiController::class, 'listUsers']);
+    Route::delete('/users/{id}',    [AdminApiController::class, 'deleteUser']);
+
+    // Ports
+    Route::get('/ports',            [AdminApiController::class, 'listPorts']);
+    Route::post('/ports',           [AdminApiController::class, 'storePort']);
+    Route::delete('/ports/{id}',    [AdminApiController::class, 'deletePort']);
+
+    // Articles
+    Route::get('/articles',         [AdminApiController::class, 'listArticles']);
+    Route::post('/articles',        [AdminApiController::class, 'storeArticle']);
+    Route::put('/articles/{id}',    [AdminApiController::class, 'updateArticle']);
+    Route::delete('/articles/{id}', [AdminApiController::class, 'deleteArticle']);
+
+    // System Actions
+    Route::post('/engine/run',      [AdminApiController::class, 'runRiskEngine']);
+    Route::post('/engine/rates',    [AdminApiController::class, 'refreshRates']);
+    Route::post('/cache/clear',     [AdminApiController::class, 'clearCache']);
+});

@@ -61,20 +61,35 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
         
-        const portIcon = L.divIcon({
-            html: '<i class="fa-solid fa-anchor text-info fa-lg"></i>',
-            className: 'custom-div-icon',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-
         ports.forEach(port => {
             if (port.lat && port.lng) {
+                let riskLevel = port.country && port.country.risk_score ? port.country.risk_score.risk_level : 'Low';
+                let iconColor = 'text-success';
+                let borderColor = '#10b981'; // success
+                
+                if (riskLevel === 'Critical') {
+                    iconColor = 'text-danger';
+                    borderColor = '#ef4444'; // danger
+                } else if (riskLevel === 'High') {
+                    iconColor = 'text-warning';
+                    borderColor = '#f59e0b'; // warning
+                } else if (riskLevel === 'Medium') {
+                    iconColor = 'text-info';
+                    borderColor = '#3b82f6'; // info
+                }
+
+                const portIcon = L.divIcon({
+                    html: `<div style="background: rgba(10, 14, 39, 0.8); border: 2px solid ${borderColor}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-anchor ${iconColor} fa-sm"></i></div>`,
+                    className: '',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
                 const marker = L.marker([port.lat, port.lng], {icon: portIcon}).addTo(map);
                 marker.bindPopup(`
                     <div class="p-1">
                         <h6 class="mb-1 fw-bold">${port.name}</h6>
-                        <div class="small mb-1">Negara: ${port.country ? port.country.name : 'Tidak diketahui'}</div>
+                        <div class="small mb-1">Negara: ${port.country ? port.country.name : 'Tidak diketahui'} <span class="badge bg-dark border border-secondary ms-1">${riskLevel} Risk</span></div>
                         <div class="small mb-1">Kota: <span class="port-city" data-lat="${port.lat}" data-lng="${port.lng}">Mencari lokasi...</span></div>
                         <div class="small mb-1">Tipe: ${port.type || 'N/A'}</div>
                         <div class="small">Ukuran: <span class="badge bg-secondary">${port.size || 'N/A'}</span></div>

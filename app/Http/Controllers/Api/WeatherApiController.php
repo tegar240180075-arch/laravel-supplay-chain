@@ -17,27 +17,39 @@ class WeatherApiController extends Controller
         $this->weatherService = $weatherService;
     }
 
+    /**
+     * Get current weather for a country (fetches fresh data if older than 1 hour).
+     */
     public function current($code)
     {
         $country = Country::where('code', $code)->firstOrFail();
         $weather = WeatherData::where('country_id', $country->id)->first();
-        
-        if (!$weather || $weather->last_updated_at < now()->subHours(1)) {
+
+        // Refresh if missing or stale (older than 1 hour)
+        if (!$weather || $weather->last_updated_at < now()->subHour()) {
             $weather = $this->weatherService->getWeather($country);
         }
-        
+
         return response()->json($weather);
     }
 
+    /**
+     * Get 7-day real forecast from Open-Meteo for a country.
+     */
     public function forecast($code)
     {
-        // Simple implementation - in real life, would return 7 day forecast from OpenMeteo
         $country = Country::where('code', $code)->firstOrFail();
-        $weather = WeatherData::where('country_id', $country->id)->first();
-        
+
+        // 7-day daily forecast from Open-Meteo API (no API key needed)
+        $forecast = $this->weatherService->getForecast($country);
+
+        // Also include current cached weather for reference
+        $current = WeatherData::where('country_id', $country->id)->first();
+
         return response()->json([
-            'current' => $weather,
-            'forecast_note' => 'Forecast data would be implemented here from Open-Meteo'
+            'country'  => $country->only(['name', 'code', 'lat', 'lng']),
+            'current'  => $current,
+            'forecast' => $forecast,
         ]);
     }
 }

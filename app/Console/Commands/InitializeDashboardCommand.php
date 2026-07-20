@@ -8,68 +8,101 @@ use App\Services\GNewsService;
 use App\Services\SentimentAnalysisService;
 use App\Services\RiskScoringService;
 use App\Services\ExchangeRateService;
+use App\Services\WorldBankService;
 
 class InitializeDashboardCommand extends Command
 {
-    protected $signature = 'dashboard:init {--limit=20 : Number of countries to process for risk calculation}';
-    protected $description = 'Initialize dashboard with full data pipeline: seed countries & ports, fetch news, analyze sentiment, and calculate risk scores';
+    protected $signature = 'dashboard:init
+                            {--limit=20 : Jumlah negara yang diproses untuk risk scoring}
+                            {--skip-economic : Lewati pengambilan data ekonomi (lebih cepat)}';
+
+    protected $description = 'Inisialisasi dashboard: seed negara & pelabuhan, ambil kurs mata uang, isi data ekonomi multi-tahun, fetch berita, analisis sentimen, hitung risk score.';
 
     public function handle(
         GNewsService $gnews,
         SentimentAnalysisService $sentiment,
         RiskScoringService $riskEngine,
-        ExchangeRateService $exchange
+        ExchangeRateService $exchange,
+        WorldBankService $worldBank
     ) {
-        $this->info('🚀 Initializing Dashboard Data Pipeline...');
+        $this->info('🚀 Memulai Pipeline Data Dashboard...');
         $this->newLine();
 
-        // Step 1: Ensure countries are seeded
+        // ── Step 1: Pastikan data negara & pelabuhan sudah ada ─────────────────
         $countryCount = Country::count();
         if ($countryCount === 0) {
-            $this->warn('No countries found. Running seeders first...');
+            $this->warn('Tidak ada negara. Menjalankan seeder terlebih dahulu...');
             $this->call('db:seed', ['--class' => 'CountrySeeder']);
             $this->call('db:seed', ['--class' => 'PortSeeder']);
             $this->call('db:seed', ['--class' => 'SentimentWordSeeder']);
         } else {
-            $this->info("✅ {$countryCount} countries already exist in database.");
+            $this->info("✅ {$countryCount} negara sudah ada di database.");
         }
 
-        // Step 2: Update exchange rates
-        $this->info('💱 Fetching latest exchange rates...');
+        // ── Step 2: Ambil kurs mata uang terbaru ───────────────────────────────
+        $this->info('💱 Mengambil kurs mata uang terbaru dari ExchangeRate API...');
         try {
             $rates = $exchange->getRates('USD');
-            $this->info('  ✅ Exchange rates updated: ' . count($rates) . ' currencies');
+            $this->info('  ✅ Kurs diperbarui: ' . count($rates) . ' mata uang (riwayat hari ini dicatat)');
         } catch (\Exception $e) {
-            $this->warn('  ⚠ Exchange rate fetch failed: ' . $e->getMessage());
+            $this->warn('  ⚠ Gagal ambil kurs: ' . $e->getMessage());
         }
 
-        // Step 3: Process countries for risk calculation
-        $limit = (int) $this->option('limit');
+        // ── Step 3: Isi data ekonomi multi-tahun dari World Bank ───────────────
+        if (!$this->option('skip-economic')) {
+            $this->info('🏦 Mengambil data ekonomi multi-tahun dari World Bank API...');
+            $countries     = Country::all();
+            $econBar       = $this->output->createProgressBar($countries->count());
+            $econBar->start();
+            $econSuccess   = 0;
+            $econFailed    = 0;
+
+            foreach ($countries as $country) {
+                try {
+                    $result = $worldBank->getEconomicData($country);
+                    if ($result) $econSuccess++;
+                    else $econFailed++;
+                } catch (\Exception $e) {
+                    $econFailed++;
+                    \Log::warning("Economic data failed for {$country->code}: " . $e->getMessage());
+                }
+                $econBar->advance();
+            }
+
+            $econBar->finish();
+            $this->newLine();
+            $this->info("  ✅ Berhasil: {$econSuccess} | Gagal: {$econFailed}");
+        } else {
+            $this->warn('  ⏭ Step data ekonomi dilewati (--skip-economic).');
+        }
+
+        // ── Step 4: Proses risk scoring untuk negara-negara pilihan ───────────
+        $limit     = (int) $this->option('limit');
         $countries = Country::take($limit)->get();
 
-        $this->info("📊 Processing risk data for {$countries->count()} countries...");
+        $this->info("📊 Menghitung risk score untuk {$countries->count()} negara...");
         $bar = $this->output->createProgressBar($countries->count());
         $bar->start();
 
         $successCount = 0;
-        $errorCount = 0;
+        $errorCount   = 0;
 
         foreach ($countries as $country) {
             try {
-                // Fetch news (uses mock data if no GNews API key)
+                // Fetch & save news (dengan cache 2 jam via GNewsService)
                 $articles = $gnews->fetchNewsForCountry($country);
 
-                // Analyze sentiment for each article
+                // Analisis sentimen tiap artikel
                 foreach ($articles as $article) {
                     $sentiment->analyzeAndSave($article);
                 }
 
-                // Calculate risk scores
+                // Hitung risk score berdasarkan data nyata
                 $riskEngine->calculateRiskForCountry($country);
                 $successCount++;
             } catch (\Exception $e) {
                 $errorCount++;
-                \Log::error("Dashboard init error for {$country->code}: " . $e->getMessage());
+                \Log::error("Dashboard init error [{$country->code}]: " . $e->getMessage());
             }
 
             $bar->advance();
@@ -78,19 +111,20 @@ class InitializeDashboardCommand extends Command
         $bar->finish();
         $this->newLine(2);
 
-        // Summary
-        $this->info('═══════════════════════════════════════');
-        $this->info('  Dashboard Initialization Complete!');
-        $this->info('═══════════════════════════════════════');
-        $this->info("  ✅ Countries processed: {$successCount}");
+        // ── Ringkasan ──────────────────────────────────────────────────────────
+        $this->info('═══════════════════════════════════════════════════');
+        $this->info('  ✅ Inisialisasi Dashboard Selesai!');
+        $this->info('═══════════════════════════════════════════════════');
+        $this->info("  Negara diproses : {$successCount}");
         if ($errorCount > 0) {
-            $this->warn("  ⚠  Errors: {$errorCount}");
+            $this->warn("  Gagal           : {$errorCount}  (lihat storage/logs/laravel.log)");
         }
-        $this->info("  📍 Total ports: " . \App\Models\Port::count());
-        $this->info("  📰 Total news articles: " . \App\Models\NewsCache::count());
-        $this->info("  📊 Total risk scores: " . \App\Models\RiskScore::count());
+        $this->info("  Total pelabuhan : " . \App\Models\Port::count());
+        $this->info("  Total berita    : " . \App\Models\NewsCache::count());
+        $this->info("  Total risk score: " . \App\Models\RiskScore::count());
+        $this->info("  Data ekonomi    : " . \App\Models\CountryEconomicData::count() . " baris (multi-tahun)");
         $this->newLine();
-        $this->info('Dashboard is now ready! Visit your application in the browser.');
+        $this->info('Dashboard siap! Buka aplikasi di browser Anda.');
 
         return Command::SUCCESS;
     }

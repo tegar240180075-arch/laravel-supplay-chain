@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'gnews' => [
+        'key' => env('GNEWS_API_KEY'),
+    ],
+
+    'open_meteo' => [
+        'base_url' => 'https://api.open-meteo.com/v1',
+    ],
+
+    'exchange_rate' => [
+        'base_url' => 'https://open.er-api.com/v6/latest',
+    ],
+
+    'world_bank' => [
+        'base_url' => 'https://api.worldbank.org/v2/country',
+    ],
+
 ];

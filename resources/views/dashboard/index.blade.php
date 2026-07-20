@@ -102,8 +102,8 @@
         showLoader();
         
         try {
-            const countries = await apiGet('countries');
-            document.getElementById('totalCountries').innerText = (countries && countries.length) ? countries.length : 0;
+            const risks = await apiGet('risk');
+            document.getElementById('totalCountries').innerText = (risks && risks.length) ? risks.length : 0;
             
             const ports = await apiGet('ports');
             document.getElementById('totalPorts').innerText = (ports && ports.length) ? ports.length : 0;
@@ -111,7 +111,7 @@
             const news = await apiGet('news');
             document.getElementById('totalNews').innerText = (news && news.length) ? news.length : 0;
 
-            await loadRiskMatrix();
+            await loadRiskMatrix(risks);
             
         } catch (error) {
             console.error('Dashboard load error:', error);
@@ -120,8 +120,13 @@
         }
     }
 
-    async function loadRiskMatrix() {
-        const risks = await apiGet('risk');
+    async function loadRiskMatrix(risksData = null) {
+        let risks = risksData;
+        if (!risks) {
+            risks = await apiGet('risk');
+            // Jika dipanggil dari tombol refresh, update juga angkanya
+            document.getElementById('totalCountries').innerText = (risks && risks.length) ? risks.length : 0;
+        }
         const tbody = document.getElementById('riskMatrixBody');
         tbody.innerHTML = '';
         
@@ -142,6 +147,7 @@
         let dist = { Critical: 0, High: 0, Medium: 0, Low: 0 };
 
         risks.sort((a, b) => b.total_score - a.total_score);
+        risks = risks.slice(0, 100); // Batasi hanya menampilkan maksimal 100 negara
 
         risks.forEach(risk => {
             if (risk.risk_level === 'Critical') criticalCount++;

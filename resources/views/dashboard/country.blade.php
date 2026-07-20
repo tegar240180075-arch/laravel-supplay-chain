@@ -44,9 +44,10 @@
         <div class="row g-4 h-100">
             <!-- Weather -->
             <div class="col-12 col-md-6">
-                <div class="glass-card h-100">
-                    <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-cloud me-2 text-info"></i> Cuaca Saat Ini</h5>
-                    <div class="d-flex align-items-center justify-content-between">
+                <div class="glass-card h-100 d-flex flex-column">
+                    <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-cloud me-2 text-info"></i> Cuaca & Prakiraan</h5>
+                    
+                    <div class="d-flex align-items-center justify-content-between mb-4">
                         <div>
                             <div class="display-4 fw-bold" id="weatherTemp">-</div>
                             <div class="text-muted fs-5" id="weatherCondition">Memuat...</div>
@@ -54,6 +55,13 @@
                         <div class="text-end">
                             <div class="fs-4 text-primary"><i class="fa-solid fa-wind"></i></div>
                             <div class="fw-bold mt-1" id="weatherWind">-</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto">
+                        <div class="small text-muted mb-2"><i class="fa-solid fa-calendar-days me-1"></i> Prakiraan 7 Hari Kedepan</div>
+                        <div class="d-flex overflow-auto pb-2 gap-2" id="forecastContainer" style="scrollbar-width: thin;">
+                            <div class="text-muted small">Memuat prakiraan...</div>
                         </div>
                     </div>
                 </div>
@@ -157,12 +165,40 @@
                 document.getElementById('countryInflation').innerText = 'Belum tersedia';
             }
             
-            // 3. Weather
-            const weather = await apiGet(`weather/${code}`);
-            if (weather) {
-                document.getElementById('weatherTemp').innerText = `${weather.temperature}°C`;
-                document.getElementById('weatherCondition').innerText = weather.condition;
-                document.getElementById('weatherWind').innerText = `${weather.wind_speed} km/j`;
+            // 3. Weather & Forecast
+            const weatherRes = await apiGet(`weather/forecast/${code}`);
+            if (weatherRes) {
+                // Current Weather
+                if (weatherRes.current) {
+                    document.getElementById('weatherTemp').innerText = `${weatherRes.current.temperature}°C`;
+                    document.getElementById('weatherCondition').innerText = weatherRes.current.condition;
+                    document.getElementById('weatherWind').innerText = `${weatherRes.current.wind_speed} km/j`;
+                }
+
+                // 7-day Forecast
+                const forecastContainer = document.getElementById('forecastContainer');
+                if (weatherRes.forecast && weatherRes.forecast.length > 0) {
+                    forecastContainer.innerHTML = '';
+                    weatherRes.forecast.forEach(day => {
+                        const dateObj = new Date(day.date);
+                        const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
+                        
+                        let icon = 'fa-cloud';
+                        if (day.condition === 'Clear') icon = 'fa-sun text-warning';
+                        else if (day.condition === 'Rain' || day.condition === 'Rain Showers') icon = 'fa-cloud-rain text-info';
+                        else if (day.condition === 'Storm') icon = 'fa-cloud-bolt text-danger';
+
+                        forecastContainer.innerHTML += `
+                            <div class="text-center p-2 rounded border border-secondary" style="min-width: 70px; background: rgba(255,255,255,0.02)">
+                                <div class="small fw-bold mb-1">${dayName}</div>
+                                <i class="fa-solid ${icon} mb-1 fs-5"></i>
+                                <div class="small">${Math.round(day.temp_max)}°</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    forecastContainer.innerHTML = '<div class="text-muted small">Prakiraan tidak tersedia.</div>';
+                }
             }
             
             // 4. Risk Score
@@ -217,17 +253,21 @@
 
             badge.innerHTML = `${getRiskIcon(risk.risk_level)} ${risk.total_score} - Risiko ${levelLabel}`;
             
-            document.getElementById('riskW').innerText = risk.weather_risk;
-            document.getElementById('barW').style.width = `${risk.weather_risk}%`;
+            const wRisk = parseFloat(risk.weather_risk) || 0;
+            document.getElementById('riskW').innerText = risk.weather_risk !== undefined ? risk.weather_risk : '0.00';
+            document.getElementById('barW').style.width = Math.max(wRisk, 2) + '%';
             
-            document.getElementById('riskI').innerText = risk.inflation_risk;
-            document.getElementById('barI').style.width = `${risk.inflation_risk}%`;
+            const iRisk = parseFloat(risk.inflation_risk) || 0;
+            document.getElementById('riskI').innerText = risk.inflation_risk !== undefined ? risk.inflation_risk : '0.00';
+            document.getElementById('barI').style.width = Math.max(iRisk, 2) + '%';
             
-            document.getElementById('riskN').innerText = risk.news_risk;
-            document.getElementById('barN').style.width = `${risk.news_risk}%`;
+            const nRisk = parseFloat(risk.news_risk) || 0;
+            document.getElementById('riskN').innerText = risk.news_risk !== undefined ? risk.news_risk : '0.00';
+            document.getElementById('barN').style.width = Math.max(nRisk, 2) + '%';
             
-            document.getElementById('riskC').innerText = risk.currency_risk;
-            document.getElementById('barC').style.width = `${risk.currency_risk}%`;
+            const cRisk = parseFloat(risk.currency_risk) || 0;
+            document.getElementById('riskC').innerText = risk.currency_risk !== undefined ? risk.currency_risk : '0.00';
+            document.getElementById('barC').style.width = Math.max(cRisk, 2) + '%';
         }
     }
 
