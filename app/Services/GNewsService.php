@@ -10,7 +10,7 @@ use Carbon\Carbon;
 
 class GNewsService
 {
-    protected $baseUrl = 'https://gnews.io/api/v4/top-headlines?category=general&lang=en&country=us&max=10&apikey=696ea44405cd757fb08c280e3a83cfe8';
+    protected $baseUrl = 'https://gnews.io/api/v4';
 
     /**
      * Fetch news for a specific country and save to cache table.
