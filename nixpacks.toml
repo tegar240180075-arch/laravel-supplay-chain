@@ -4,7 +4,7 @@ nixPkgs = ["nodejs", "npm", "php83", "php83Extensions.pdo", "php83Extensions.pdo
 [phases.install]
 cmds = [
     "composer install --no-dev --optimize-autoloader --no-interaction",
-    "npm install",
+    "npm install --include=dev",
     "npm run build",
     "php artisan config:cache",
     "php artisan route:cache",
