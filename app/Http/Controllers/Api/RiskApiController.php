@@ -20,8 +20,32 @@ class RiskApiController extends Controller
 
     public function index()
     {
-        $scores = RiskScore::with('country')->get();
-        return response()->json($scores);
+        // Get all countries and their risk scores
+        $countries = Country::all();
+        $riskScores = RiskScore::all()->keyBy('country_id');
+        
+        $results = [];
+        foreach ($countries as $country) {
+            $score = $riskScores->get($country->id);
+            if ($score) {
+                // Attach country object for the frontend
+                $score->country = $country;
+                $results[] = $score;
+            } else {
+                // Return default 0 structure if risk not calculated yet (due to API limits etc)
+                $results[] = [
+                    'country' => $country,
+                    'total_score' => 0.0,
+                    'weather_risk' => 0.0,
+                    'inflation_risk' => 0.0,
+                    'news_risk' => 0.0,
+                    'currency_risk' => 0.0,
+                    'risk_level' => 'Low'
+                ];
+            }
+        }
+        
+        return response()->json($results);
     }
 
     public function show($code)

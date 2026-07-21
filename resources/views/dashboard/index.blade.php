@@ -147,7 +147,7 @@
         let dist = { Critical: 0, High: 0, Medium: 0, Low: 0 };
 
         risks.sort((a, b) => b.total_score - a.total_score);
-        risks = risks.slice(0, 100); // Batasi hanya menampilkan maksimal 100 negara
+        // risks = risks.slice(0, 100); // Menampilkan semua negara tanpa batas 100
 
         risks.forEach(risk => {
             if (risk.risk_level === 'Critical') criticalCount++;

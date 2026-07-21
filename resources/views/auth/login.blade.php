@@ -52,11 +52,7 @@
             </form>
         </div>
         
-        <div class="text-center mt-4 text-muted small">
-            <p>Demo Akun:</p>
-            <p class="mb-1">Admin: <code>admin@example.com</code> / <code>password</code></p>
-            <p>User: <code>user@example.com</code> / <code>password</code></p>
-        </div>
+
     </div>
 </div>
 @endsection
