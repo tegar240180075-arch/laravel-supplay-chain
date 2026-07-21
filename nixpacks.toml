@@ -1,9 +1,15 @@
 [phases.setup]
-nixPkgs = ["php83", "php83Extensions.pdo", "php83Extensions.pdo_mysql", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.intl", "php83Extensions.bcmath", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "composer"]
+nixPkgs = ["php83", "php83Extensions.pdo", "php83Extensions.pdo_mysql", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.intl", "php83Extensions.bcmath", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "nodejs_20"]
 
 [phases.install]
 cmds = [
-    "composer install --no-dev --optimize-autoloader --no-interaction",
+    "npm install",
+    "composer install --no-dev --optimize-autoloader --no-interaction"
+]
+
+[phases.build]
+cmds = [
+    "npm run build",
     "php artisan config:cache",
     "php artisan route:cache",
     "php artisan view:cache"
@@ -11,3 +17,4 @@ cmds = [
 
 [start]
 cmd = "php artisan migrate --force && php -S 0.0.0.0:$PORT -t public"
+
