@@ -70,10 +70,10 @@ class WorldBankService
         $allYears = [];
 
         foreach ($indicators as $key => $indicator) {
-            usleep(200_000); // 0.2 s delay — be polite to the World Bank API
+            usleep(500_000); // 0.5 s delay — be polite to the World Bank API
 
             try {
-                $response = Http::timeout(15)->get(
+                $response = Http::timeout(15)->retry(3, 2000)->get(
                     "{$this->baseUrl}/{$countryCode}/indicator/{$indicator}",
                     [
                         'date'     => $dateRange,
