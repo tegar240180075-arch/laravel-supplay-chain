@@ -149,7 +149,12 @@ class AdminApiController extends Controller
      */
     public function runRiskEngine(RiskScoringService $riskEngine)
     {
-        $countries = \App\Models\Country::whereHas('riskScore')->get();
+        // Limit to 10 countries with the oldest updates to prevent HTTP Gateway Timeout (504)
+        $countries = \App\Models\Country::join('risk_scores', 'countries.id', '=', 'risk_scores.country_id')
+            ->orderBy('risk_scores.updated_at', 'asc')
+            ->select('countries.*')
+            ->take(10)
+            ->get();
 
         if ($countries->isEmpty()) {
             $countries = \App\Models\Country::take(10)->get();
