@@ -28,7 +28,7 @@
 <body>
 
     <!-- Loading Overlay -->
-    <div class="loading-overlay" id="globalLoader">
+    <div class="loading-overlay" id="globalLoader" style="opacity: 0; pointer-events: none; display: none;">
         <div class="spinner"></div>
         <h5 class="mt-3 text-primary">Memproses Data...</h5>
     </div>

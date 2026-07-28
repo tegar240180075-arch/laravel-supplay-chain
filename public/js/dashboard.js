@@ -31,6 +31,18 @@ async function apiGet(endpoint) {
     }
 }
 
+function showDashboardError(message) {
+    const tbody = document.getElementById('riskMatrixBody');
+    if (!tbody) return;
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center text-warning py-4">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                ${message}
+            </td>
+        </tr>`;
+}
+
 async function apiPost(endpoint, data) {
     try {
         const response = await fetch(`/api/${endpoint}`, {

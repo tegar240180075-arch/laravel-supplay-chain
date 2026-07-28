@@ -179,7 +179,7 @@ h1, h2, h3, h4, h5, h6 {
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.9);
     z-index: 2000;
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     flex-direction: column;
@@ -190,6 +190,7 @@ h1, h2, h3, h4, h5, h6 {
 .loading-overlay.active {
     opacity: 1;
     pointer-events: all;
+    display: flex !important;
 }
 .spinner {
     width: 50px;

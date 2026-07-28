@@ -103,6 +103,10 @@
         
         try {
             const risks = await apiGet('risk');
+            if (!risks) {
+                showDashboardError('Tidak dapat memuat data risiko. Periksa koneksi API atau jalankan: php artisan dashboard:init');
+                return;
+            }
             document.getElementById('totalCountries').innerText = (risks && risks.length) ? risks.length : 0;
             
             const ports = await apiGet('ports');
@@ -115,6 +119,7 @@
             
         } catch (error) {
             console.error('Dashboard load error:', error);
+            showDashboardError('Terjadi kesalahan saat memuat dashboard. Coba muat ulang halaman.');
         } finally {
             hideLoader();
         }
