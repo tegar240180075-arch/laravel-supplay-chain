@@ -12,4 +12,4 @@ cmds = [
 ]
 
 [start]
-cmd = "php artisan migrate --force && php -S 0.0.0.0:$PORT -t public"
+cmd = "php artisan migrate --force && (while true; do php artisan schedule:run --no-interaction >> /dev/null 2>&1; sleep 60; done &) && php -S 0.0.0.0:$PORT -t public"
