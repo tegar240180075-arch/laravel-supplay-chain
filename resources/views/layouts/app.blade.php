@@ -57,6 +57,9 @@
         <a href="{{ route('dashboard.news') }}" class="sidebar-link {{ request()->routeIs('dashboard.news') ? 'active' : '' }}">
             <i class="fa-regular fa-newspaper"></i> Sentimen Berita
         </a>
+        <a href="{{ route('user.articles.index') }}" class="sidebar-link {{ request()->routeIs('user.articles.*') ? 'active' : '' }}">
+            <i class="fa-solid fa-file-lines"></i> Artikel Publikasi
+        </a>
         <a href="{{ route('dashboard.ports') }}" class="sidebar-link {{ request()->routeIs('dashboard.ports') ? 'active' : '' }}">
             <i class="fa-solid fa-anchor"></i> Lokasi Pelabuhan
         </a>
@@ -81,6 +84,9 @@
 
         <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->routeIs('admin.index') ? 'active' : '' }}">
             <i class="fa-solid fa-shield-halved"></i> Administrasi
+        </a>
+        <a href="{{ route('admin.articles.index') }}" class="sidebar-link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}">
+            <i class="fa-solid fa-pen-to-square"></i> Kelola Artikel
         </a>
         @endif
         @endauth

@@ -51,11 +51,24 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard.watchlist');
     })->name('dashboard.watchlist');
 
+    Route::get('/articles', [\App\Http\Controllers\ArticleController::class, 'index'])->name('user.articles.index');
+    Route::get('/articles/{article}', [\App\Http\Controllers\ArticleController::class, 'show'])->name('user.articles.show');
+
     Route::middleware(['admin'])->group(function () {
         Route::get('/admin', function () {
             // A simple placeholder for now. Could point to a real view later.
             return view('admin.index');
         })->name('admin.index');
+        
+        Route::resource('admin/articles', \App\Http\Controllers\Admin\ArticleController::class)->names([
+            'index' => 'admin.articles.index',
+            'create' => 'admin.articles.create',
+            'store' => 'admin.articles.store',
+            'show' => 'admin.articles.show',
+            'edit' => 'admin.articles.edit',
+            'update' => 'admin.articles.update',
+            'destroy' => 'admin.articles.destroy',
+        ]);
     });
 });
 

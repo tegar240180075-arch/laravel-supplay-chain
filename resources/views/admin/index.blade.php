@@ -76,12 +76,6 @@
             <a class="nav-link text-muted" id="tabPorts" href="#" onclick="showTab('ports',this)">
                 <i class="fa-solid fa-anchor me-1"></i>Pelabuhan
             </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-muted" id="tabArticles" href="#" onclick="showTab('articles',this)">
-                <i class="fa-solid fa-file-pen me-1"></i>Artikel
-            </a>
-        </li>
     </ul>
 
     {{-- Users Panel --}}
@@ -147,38 +141,6 @@
         <div id="portsPagination" class="mt-2 text-center"></div>
     </div>
 
-    {{-- Articles Panel --}}
-    <div id="panelArticles" class="d-none">
-        <div class="d-flex justify-content-between mb-3">
-            <h6 class="text-muted">Artikel Intelijen Analisis</h6>
-            <button class="btn btn-sm btn-primary" onclick="showAddArticleForm()">
-                <i class="fa-solid fa-plus me-1"></i>Tulis Artikel
-            </button>
-        </div>
-
-        {{-- Add Article Form --}}
-        <div id="addArticleForm" class="p-3 border border-secondary rounded mb-3 d-none" style="background:rgba(59,130,246,0.05)">
-            <h6 class="mb-3 text-primary">Tulis Artikel Baru</h6>
-            <div class="mb-2">
-                <input type="text" id="articleTitle" class="form-control bg-dark text-white border-secondary" placeholder="Judul Artikel *">
-            </div>
-            <div class="mb-2">
-                <textarea id="articleContent" class="form-control bg-dark text-white border-secondary" rows="5" placeholder="Konten artikel..."></textarea>
-            </div>
-            <div class="d-flex gap-2">
-                <select id="articleStatus" class="form-select bg-dark text-white border-secondary" style="width:150px">
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                </select>
-                <button class="btn btn-primary" onclick="addArticle()">Terbitkan</button>
-                <button class="btn btn-outline-secondary" onclick="document.getElementById('addArticleForm').classList.add('d-none')">Batal</button>
-            </div>
-        </div>
-
-        <div id="articlesBody">
-            <div class="text-center text-muted py-3">Memuat artikel...</div>
-        </div>
-    </div>
 </div>
 
 @endsection
@@ -215,11 +177,9 @@ function showTab(name, el) {
 
     document.getElementById('panelUsers').classList.add('d-none');
     document.getElementById('panelPorts').classList.add('d-none');
-    document.getElementById('panelArticles').classList.add('d-none');
     document.getElementById(`panel${name.charAt(0).toUpperCase()+name.slice(1)}`).classList.remove('d-none');
 
     if (name === 'ports')    loadPorts();
-    if (name === 'articles') loadArticles();
 }
 
 // ── System Actions ──────────────────────────────────────────────────────────
@@ -417,67 +377,5 @@ async function deletePort(id, name) {
     else alert('Gagal menghapus pelabuhan.');
 }
 
-// ── ARTICLES ────────────────────────────────────────────────────────────────
-async function loadArticles() {
-    const container = document.getElementById('articlesBody');
-    const articles  = await apiGet('admin/articles');
-
-    if (!articles || articles.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-solid fa-file-circle-xmark fa-2x mb-2"></i><br>Belum ada artikel. Klik "Tulis Artikel" untuk membuat yang pertama.</div>';
-        return;
-    }
-
-    container.innerHTML = articles.map(a => `
-        <div class="p-3 border border-secondary rounded mb-3" style="background:rgba(255,255,255,0.02)">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <span class="badge ${a.status === 'published' ? 'bg-success' : 'bg-secondary'} me-2">${a.status === 'published' ? 'Published' : 'Draft'}</span>
-                    <h6 class="d-inline">${a.title}</h6>
-                </div>
-                <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteArticle(${a.id},'${a.title.replace(/'/g,"\\'")}')">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-            <p class="text-muted small mt-2 mb-1">${(a.content || '').substring(0, 200)}${a.content && a.content.length > 200 ? '...' : ''}</p>
-            <div class="small text-muted">Oleh: ${a.user ? a.user.name : 'Admin'} &bull; ${new Date(a.created_at).toLocaleDateString('id-ID')}</div>
-        </div>
-    `).join('');
-}
-
-function showAddArticleForm() {
-    document.getElementById('addArticleForm').classList.toggle('d-none');
-}
-
-async function addArticle() {
-    const payload = {
-        title:   document.getElementById('articleTitle').value,
-        content: document.getElementById('articleContent').value,
-        status:  document.getElementById('articleStatus').value,
-    };
-    if (!payload.title || !payload.content) {
-        alert('Judul dan konten wajib diisi.');
-        return;
-    }
-    const res = await apiPost('admin/articles', payload);
-    if (res && res.success) {
-        document.getElementById('addArticleForm').classList.add('d-none');
-        document.getElementById('articleTitle').value   = '';
-        document.getElementById('articleContent').value = '';
-        loadArticles();
-    } else {
-        alert('Gagal menyimpan artikel.');
-    }
-}
-
-async function deleteArticle(id, title) {
-    if (!confirm(`Hapus artikel "${title}"?`)) return;
-    const res = await fetch(`/api/admin/articles/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-    });
-    const data = await res.json();
-    if (data.success) loadArticles();
-    else alert('Gagal menghapus artikel.');
-}
 </script>
 @endpush
