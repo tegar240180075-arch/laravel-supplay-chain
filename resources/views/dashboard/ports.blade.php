@@ -35,6 +35,10 @@
 @endsection
 
 @push('scripts')
+<script type="module">
+    import { seaRoute } from 'https://cdn.jsdelivr.net/npm/searoute-ts@1.1.2/dist/index.mjs';
+    window.seaRoute = seaRoute;
+</script>
 <script>
     let map;
     let markers = [];
@@ -212,29 +216,78 @@
         }
         
         if (routeOrigin && routeDestination) {
-            const latlngs = [
-                [routeOrigin.lat, routeOrigin.lng],
-                [routeDestination.lat, routeDestination.lng]
-            ];
-            
-            // Calculate distance
-            const distanceKm = getHaversineDistance(latlngs[0], latlngs[1]);
-            const distanceNm = (distanceKm * 0.539957).toFixed(1);
-            document.getElementById('routeDistance').innerText = `${distanceNm} NM (${distanceKm.toFixed(1)} km)`;
-            
-            // Draw path (Beautiful dashed cyan line)
-            routeLine = L.polyline(latlngs, {
-                color: '#00d4ff',
-                weight: 3,
-                dashArray: '10, 10',
-                opacity: 0.8
-            }).addTo(map);
-            
-            // Fit bounds to show the entire route
-            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+            if (window.seaRoute) {
+                try {
+                    // seaRoute takes [lng, lat]
+                    const originPoint = [routeOrigin.lng, routeOrigin.lat];
+                    const destPoint = [routeDestination.lng, routeDestination.lat];
+                    
+                    const routeGeoJson = window.seaRoute(originPoint, destPoint);
+                    
+                    // Draw path (Beautiful dashed cyan line representing the sea lane)
+                    routeLine = L.geoJSON(routeGeoJson, {
+                        style: {
+                            color: '#00d4ff',
+                            weight: 3,
+                            dashArray: '10, 10',
+                            opacity: 0.8
+                        }
+                    }).addTo(map);
+
+                    // Calculate distance from GeoJSON properties if available
+                    let distanceKm = 0;
+                    if (routeGeoJson.properties && routeGeoJson.properties.length) {
+                        distanceKm = routeGeoJson.properties.length;
+                    } else {
+                        // Fallback: sum up distances of segment coordinates
+                        const coords = routeGeoJson.geometry.coordinates;
+                        for (let i = 0; i < coords.length - 1; i++) {
+                            distanceKm += getHaversineDistance(
+                                [coords[i][1], coords[i][0]], // [lat, lng]
+                                [coords[i+1][1], coords[i+1][0]]
+                            );
+                        }
+                    }
+
+                    const distanceNm = (distanceKm * 0.539957).toFixed(1);
+                    document.getElementById('routeDistance').innerText = `${distanceNm} NM (${distanceKm.toFixed(1)} km)`;
+                    
+                    // Fit bounds to show the entire route
+                    map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+                } catch (err) {
+                    console.error('SeaRoute calculation failed:', err);
+                    drawStraightLine();
+                }
+            } else {
+                drawStraightLine();
+            }
         } else {
             document.getElementById('routeDistance').innerText = '-';
         }
+    }
+
+    function drawStraightLine() {
+        const latlngs = [
+            [routeOrigin.lat, routeOrigin.lng],
+            [routeDestination.lat, routeDestination.lng]
+        ];
+        
+        // Calculate distance
+        const distanceKm = getHaversineDistance(latlngs[0], latlngs[1]);
+        const distanceNm = (distanceKm * 0.539957).toFixed(1);
+        document.getElementById('routeDistance').innerText = `${distanceNm} NM (${distanceKm.toFixed(1)} km) [Garis Lurus]`;
+        
+        // Draw path (Fallback straight line in red)
+        routeLine = L.polyline(latlngs, {
+            color: '#ff4d4d',
+            weight: 3,
+            dashArray: '5, 5',
+            opacity: 0.8
+        }).addTo(map);
+        
+        // Fit bounds to show the entire route
+        map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
     }
 
     function clearRoute() {
