@@ -6,16 +6,24 @@
 @section('content')
 <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
-        <div class="glass-card h-100">
+        <div class="glass-card">
             <h5 class="border-bottom border-secondary pb-2 mb-3">Cari Pelabuhan</h5>
             <div class="mb-3">
                 <input type="text" id="portSearch" class="form-control bg-dark text-white border-secondary" placeholder="Cari berdasarkan nama...">
             </div>
             <button class="btn btn-primary w-100 mb-4" onclick="searchPorts()">Cari</button>
             
-            <div id="portList" style="max-height: 350px; overflow-y: auto;">
+            <div id="portList" style="max-height: 250px; overflow-y: auto;">
                 <div class="text-muted small text-center">Masukkan kata kunci atau klik penanda di peta.</div>
             </div>
+        </div>
+
+        <div class="glass-card mt-4 d-none" id="routePanel">
+            <h5 class="border-bottom border-secondary pb-2 mb-3">🗺️ Rute Pelayaran</h5>
+            <div class="mb-2 small"><strong>Asal:</strong> <span id="routeOrigin" class="text-info">-</span></div>
+            <div class="mb-3 small"><strong>Tujuan:</strong> <span id="routeDestination" class="text-warning">-</span></div>
+            <div class="mb-3 small"><strong>Jarak:</strong> <span id="routeDistance" class="text-success">-</span></div>
+            <button class="btn btn-sm btn-outline-danger w-100" onclick="clearRoute()">Hapus Rute</button>
         </div>
     </div>
     <div class="col-12 col-md-8">
@@ -30,6 +38,9 @@
 <script>
     let map;
     let markers = [];
+    let routeOrigin = null;
+    let routeDestination = null;
+    let routeLine = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         initMap();
@@ -92,7 +103,15 @@
                         <div class="small mb-1">Negara: ${port.country ? port.country.name : 'Tidak diketahui'} <span class="badge bg-dark border border-secondary ms-1">${riskLevel} Risk</span></div>
                         <div class="small mb-1">Kota: <span class="port-city" data-lat="${port.lat}" data-lng="${port.lng}">Mencari lokasi...</span></div>
                         <div class="small mb-1">Tipe: ${port.type || 'N/A'}</div>
-                        <div class="small">Ukuran: <span class="badge bg-secondary">${port.size || 'N/A'}</span></div>
+                        <div class="small mb-3">Ukuran: <span class="badge bg-secondary">${port.size || 'N/A'}</span></div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-xs btn-primary flex-fill py-1 text-xs" onclick="setRoutePoint('origin', ${port.id}, '${port.name.replace(/'/g, "\\'")}', ${port.lat}, ${port.lng})">
+                                <i class="fa-solid fa-anchor me-1"></i>Set Asal
+                            </button>
+                            <button class="btn btn-xs btn-warning text-dark flex-fill py-1 text-xs" onclick="setRoutePoint('destination', ${port.id}, '${port.name.replace(/'/g, "\\'")}', ${port.lat}, ${port.lng})">
+                                <i class="fa-solid fa-flag-checkered me-1"></i>Set Tujuan
+                            </button>
+                        </div>
                     </div>
                 `);
                 markers.push(marker);
@@ -168,6 +187,78 @@
     
     function focusPort(lat, lng) {
         map.setView([lat, lng], 8);
+    }
+
+    function setRoutePoint(type, id, name, lat, lng) {
+        const point = { id, name, lat, lng };
+        if (type === 'origin') {
+            routeOrigin = point;
+            document.getElementById('routeOrigin').innerText = name;
+        } else {
+            routeDestination = point;
+            document.getElementById('routeDestination').innerText = name;
+        }
+        
+        document.getElementById('routePanel').classList.remove('d-none');
+        map.closePopup();
+        
+        drawRoute();
+    }
+
+    function drawRoute() {
+        if (routeLine) {
+            map.removeLayer(routeLine);
+            routeLine = null;
+        }
+        
+        if (routeOrigin && routeDestination) {
+            const latlngs = [
+                [routeOrigin.lat, routeOrigin.lng],
+                [routeDestination.lat, routeDestination.lng]
+            ];
+            
+            // Calculate distance
+            const distanceKm = getHaversineDistance(latlngs[0], latlngs[1]);
+            const distanceNm = (distanceKm * 0.539957).toFixed(1);
+            document.getElementById('routeDistance').innerText = `${distanceNm} NM (${distanceKm.toFixed(1)} km)`;
+            
+            // Draw path (Beautiful dashed cyan line)
+            routeLine = L.polyline(latlngs, {
+                color: '#00d4ff',
+                weight: 3,
+                dashArray: '10, 10',
+                opacity: 0.8
+            }).addTo(map);
+            
+            // Fit bounds to show the entire route
+            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+        } else {
+            document.getElementById('routeDistance').innerText = '-';
+        }
+    }
+
+    function clearRoute() {
+        routeOrigin = null;
+        routeDestination = null;
+        if (routeLine) {
+            map.removeLayer(routeLine);
+            routeLine = null;
+        }
+        document.getElementById('routeOrigin').innerText = '-';
+        document.getElementById('routeDestination').innerText = '-';
+        document.getElementById('routeDistance').innerText = '-';
+        document.getElementById('routePanel').classList.add('d-none');
+    }
+
+    function getHaversineDistance(coords1, coords2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (coords2[0] - coords1[0]) * Math.PI / 180;
+        const dLng = (coords2[1] - coords1[1]) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(coords1[0] * Math.PI / 180) * Math.cos(coords2[0] * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 </script>
 <style>
