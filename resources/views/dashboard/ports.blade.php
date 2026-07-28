@@ -36,8 +36,15 @@
 
 @push('scripts')
 <script type="module">
-    import { seaRoute } from 'https://cdn.jsdelivr.net/npm/searoute-ts@1.1.2/dist/index.mjs';
+    import { seaRoute, loadNetwork } from 'https://cdn.jsdelivr.net/npm/searoute-ts@2.0.0/dist/index.mjs';
     window.seaRoute = seaRoute;
+    try {
+        const network = await loadNetwork('https://cdn.jsdelivr.net/npm/searoute-ts@2.0.0/dist/marnet.json');
+        window.seaRouteNetwork = network;
+        console.log('Maritime network loaded successfully.');
+    } catch (e) {
+        console.error('Failed to load maritime network:', e);
+    }
 </script>
 <script>
     let map;
@@ -222,7 +229,7 @@
                     const originPoint = [routeOrigin.lng, routeOrigin.lat];
                     const destPoint = [routeDestination.lng, routeDestination.lat];
                     
-                    const routeGeoJson = window.seaRoute(originPoint, destPoint);
+                    const routeGeoJson = window.seaRoute(originPoint, destPoint, window.seaRouteNetwork ? { network: window.seaRouteNetwork } : {});
                     
                     // Draw path (Beautiful dashed cyan line representing the sea lane)
                     routeLine = L.geoJSON(routeGeoJson, {
