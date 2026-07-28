@@ -66,6 +66,9 @@
         <a href="{{ route('dashboard.analytics') }}" class="sidebar-link {{ request()->routeIs('dashboard.analytics') ? 'active' : '' }}">
             <i class="fa-solid fa-chart-pie"></i> Visualisasi Data
         </a>
+        <a href="{{ route('dashboard.ranking') }}" class="sidebar-link {{ request()->routeIs('dashboard.ranking') ? 'active' : '' }}">
+            <i class="fa-solid fa-ranking-star"></i> Peringkat Ekonomi
+        </a>
         <a href="{{ route('dashboard.compare') }}" class="sidebar-link {{ request()->routeIs('dashboard.compare') ? 'active' : '' }}">
             <i class="fa-solid fa-code-compare"></i> Bandingkan Negara
         </a>

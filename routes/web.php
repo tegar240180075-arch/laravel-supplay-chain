@@ -39,6 +39,10 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard.analytics');
     })->name('dashboard.analytics');
 
+    Route::get('/ranking', function () {
+        return view('dashboard.ranking');
+    })->name('dashboard.ranking');
+
     Route::get('/compare', function () {
         return view('dashboard.compare');
     })->name('dashboard.compare');

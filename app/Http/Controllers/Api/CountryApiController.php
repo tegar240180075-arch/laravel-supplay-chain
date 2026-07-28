@@ -74,4 +74,34 @@ class CountryApiController extends Controller
         $data = CountryEconomicData::where('country_id', $country->id)->orderBy('year', 'desc')->get();
         return response()->json($data);
     }
+
+    public function economicRanking()
+    {
+        // Get the latest year's economic data for each country
+        $latestRecords = CountryEconomicData::select('country_economic_data.*')
+            ->join(\DB::raw('(select country_id, max(year) as max_year from country_economic_data group by country_id) latest'), function($join) {
+                $join->on('country_economic_data.country_id', '=', 'latest.country_id')
+                     ->on('country_economic_data.year', '=', 'latest.max_year');
+            })
+            ->get()
+            ->keyBy('country_id');
+
+        $countries = Country::all();
+        $results = [];
+
+        foreach ($countries as $country) {
+            $econ = $latestRecords->get($country->id);
+            $results[] = [
+                'country' => $country,
+                'year' => $econ ? $econ->year : null,
+                'gdp_billions' => $econ ? (float)$econ->gdp_billions : null,
+                'inflation_rate' => $econ ? (float)$econ->inflation_rate : null,
+                'population' => $econ ? (int)$econ->population : null,
+                'exports_billions' => $econ ? (float)$econ->exports_billions : null,
+                'imports_billions' => $econ ? (float)$econ->imports_billions : null,
+            ];
+        }
+
+        return response()->json($results);
+    }
 }

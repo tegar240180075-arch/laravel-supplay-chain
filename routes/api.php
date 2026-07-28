@@ -18,6 +18,7 @@ Route::get('/user', function (Request $request) {
 // Countries
 Route::get('/countries', [CountryApiController::class, 'index']);
 Route::get('/countries/search', [CountryApiController::class, 'search']);
+Route::get('/countries/ranking', [CountryApiController::class, 'economicRanking']);
 Route::get('/countries/{code}', [CountryApiController::class, 'show']);
 Route::get('/countries/{code}/economic', [CountryApiController::class, 'economicData']);
 
