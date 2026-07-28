@@ -39,17 +39,7 @@
         <div class="glass-card">
             <h5 class="border-bottom border-secondary pb-3 mb-3">⚙️ Aksi Sistem</h5>
             <div class="row g-3">
-                <div class="col-12 col-md-4">
-                    <div class="p-3 border border-secondary rounded" style="background:rgba(0,212,255,0.05)">
-                        <h6 class="text-info"><i class="fa-solid fa-rotate me-2"></i>Perbarui Risk Engine</h6>
-                        <p class="text-muted small mb-3">Hitung ulang skor risiko semua negara menggunakan data cuaca, inflasi, dan sentimen berita terbaru.</p>
-                        <button class="btn btn-primary w-100" onclick="runEngine()" id="btnEngine">
-                            <i class="fa-solid fa-play me-2"></i>Jalankan Risk Engine
-                        </button>
-                        <div class="mt-2 small d-none" id="engineStatus"></div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                     <div class="p-3 border border-secondary rounded" style="background:rgba(245,158,11,0.05)">
                         <h6 class="text-warning"><i class="fa-solid fa-money-bill-trend-up me-2"></i>Perbarui Kurs Mata Uang</h6>
                         <p class="text-muted small mb-3">Ambil kurs terbaru dari ExchangeRate API dan simpan riwayat hari ini untuk semua mata uang.</p>
@@ -59,7 +49,7 @@
                         <div class="mt-2 small d-none" id="ratesStatus"></div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                     <div class="p-3 border border-secondary rounded" style="background:rgba(239,68,68,0.05)">
                         <h6 class="text-danger"><i class="fa-solid fa-trash-can me-2"></i>Bersihkan Cache Lama</h6>
                         <p class="text-muted small mb-3">Hapus berita >30 hari, data cuaca >1 hari, dan kurs >2 hari untuk menghemat ruang database.</p>
